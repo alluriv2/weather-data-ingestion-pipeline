@@ -2,10 +2,15 @@
 
 ## Overview
 
-This project implements an **end-to-end incremental weather data ingestion pipeline** that retrieves live weather station logs from a remote server, stores them locally using **DuckDB**, and exposes the ingested data through a **lightweight Flask + Plotly dashboard** for inspection.
+This project implements an **end-to-end incremental weather data ingestion pipeline** that retrieves live weather station logs from  
+**https://tylerconlon.com/wx/logs/**, stores them locally using **DuckDB**, and makes the data accessible through a **Flask + Plotly dashboard**.
 
-The primary focus of this project is **data engineering**—specifically incremental ingestion, deduplication, schema design, and reproducible local execution.  
-The dashboard exists only as a simple interface to inspect the ingested data and validate pipeline behavior.
+The project focuses on **data engineering**, including incremental ingestion, deduplication, schema design, and reproducible local execution. The ingestion pipeline ensures correctness and continuity as new data arrives.
+
+The ingestion process is designed for continuously updated source logs and supports both on-demand and configurable periodic execution.
+
+The dashboard provides an interactive interface to inspect the ingested data and explore trends across different time windows.
+
 
 ---
 
@@ -89,8 +94,30 @@ This ensures the pipeline is **idempotent** and safe to re-run.
 
 - Flask serves a simple local dashboard
 - Plotly renders time-series plots and basic per-station statistics
-- The dashboard is **not** a production analytics tool  
-  It exists purely for inspection and pipeline validation
+- The dashboard is intended for interactive inspection and validation of the ingested data rather than full-scale analytics.
+
+## Live Data Updates and Refresh Behavior
+
+Weather station logs are published continuously on the remote server.  
+This pipeline is built to ingest new data incrementally as it becomes available.
+
+- Each station’s most recent timestamp is tracked in the database
+- On every update cycle, only records newer than the last ingested timestamp are processed
+- Previously ingested data is never reprocessed or duplicated
+
+### Update Modes
+
+The pipeline supports two update modes:
+
+- **Automatic updates**
+  - A background thread can periodically fetch and ingest new data
+  - The update frequency is configurable in the application entry point
+
+- **Manual updates**
+  - A dedicated HTTP endpoint allows triggering ingestion on demand
+  - Useful for validation, testing, or controlled refresh cycles
+
+This design allows the pipeline to operate continuously, intermittently, or entirely on demand, depending on the use case.
 
 ---
 
@@ -153,7 +180,7 @@ Concurrency is handled using a thread lock to prevent overlapping updates.
 
 - DuckDB was chosen for its simplicity, speed, and zero external dependencies
 - Flask and Plotly are intentionally minimal
-- The dashboard is **not** the core deliverable—the ingestion pipeline is
+- The ingestion pipeline is the primary focus, with the dashboard serving as a lightweight inspection interface.
 - No data is committed to GitHub to ensure portability and reproducibility
 
 ---
