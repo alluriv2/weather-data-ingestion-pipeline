@@ -2,8 +2,7 @@
 
 ## Overview
 
-This project implements an **end-to-end incremental weather data ingestion pipeline** that retrieves live weather station logs from  
-**https://tylerconlon.com/wx/logs/**, stores them locally using **DuckDB**, and makes the data accessible through a **Flask + Plotly dashboard**.
+This project implements an **end-to-end incremental weather data ingestion pipeline** that retrieves live weather station logs from **https://tylerconlon.com/wx/logs/**, stores them locally using **DuckDB**, and makes the data accessible through a **Flask + Plotly dashboard**.
 
 The project focuses on **data engineering**, including incremental ingestion, deduplication, schema design, and reproducible local execution. The ingestion pipeline ensures correctness and continuity as new data arrives.
 
