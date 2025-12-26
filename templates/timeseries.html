@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+<script>
+function clipOutliers(values, metric) {
+    const v = [...values];
+    if (metric === "rain_inches") return v.map(x => (x > 3 ? null : x));
+    if (metric === "wind_speed") return v.map(x => (x > 60 ? null : x));
+    if (metric === "temperature") return v.map(x => (x < -40 || x > 140 ? null : x));
+    if (metric === "lux") return v.map(x => (x > 3000 ? null : x));
+    return v;
+}
+</script>
+
+    <style>
+    #top-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 18px 30px;
+        background: transparent; 
+        box-shadow: none;
+        margin-bottom: 20px;
+    }
+
+    #back-btn {
+        padding: 10px 20px;
+        font-size: 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        border: none;
+        background: #e6e6e6;
+        transition: 0.2s;
+    }
+
+    #back-btn:hover {
+        background: #d0d0d0;
+    }
+
+    #page-title {
+        margin: 0;
+        font-size: 26px;
+        font-weight: 600;
+    }
+    </style>
+</head>
+
+<body>
+
+<div id="top-bar">
+    <button id="back-btn" onclick="window.location.href='/'">⟵ Back to Dashboard</button>
+    <h2 id="page-title">{{ title }}</h2>
+    <div style="width:120px;"></div> 
+</div>
+
+
+
+<div id="chart" style="width:100%; height:600px; margin-bottom:40px;"></div>
+
+<script>
+var rows = {{ data | tojson }};
+var metricName = "{{ metric }}";
+
+const metricLabels = {
+    "temperature": "Temperature (°F)",
+    "wind_speed": "Wind Speed (mph)",
+    "wind_direction": "Wind Direction (°)",
+    "lux": "Light Level (lx)",
+    "rain_inches": "Rainfall (in)"
+};
+
+var yAxisLabel = metricLabels[metricName] || "Value";
+
+function unpack(rows, key) { return rows.map(r => r[key]); }
+
+const cols = Object.keys(rows[0]);
+const stationCols = cols.filter(c => c !== "timestamp");
+
+let traces = [];
+stationCols.forEach(col => {
+    traces.push({
+        type: "scatter",
+        mode: "lines",
+        name: col,
+        x: unpack(rows, "timestamp"),
+        y: clipOutliers(unpack(rows, col), metricName)
+    });
+});
+
+Plotly.newPlot("chart", traces, {
+    title: "{{ title }}",
+    xaxis: { title: "Time" },
+    yaxis: { title: yAxisLabel }
+});
+</script>
+
+
+{% if station_stats %}
+
+{% set stationNames = {
+    "wx_waverly": "Waverly Station",
+    "wx_east_st": "East Street Station"
+} %}
+
+<div style="margin-top:40px; width:100%; display:flex; flex-direction:column; gap:120px;">
+
+    {% for station, stats in station_stats.items() %}
+
+    <div style="text-align:center; width:100%;">
+
+        <h2 style="margin-bottom:30px; font-size:32px;">
+            {{ stationNames.get(station, station) }}
+        </h2>
+
+        <div style="display:flex; justify-content:center; gap:120px;">
+            <div style="width:450px;">
+                <h3 style="font-size:26px;">All-Time Min</h3>
+                <div id="{{ station }}_min" style="width:450px; height:350px;"></div>
+            </div>
+
+            <div style="width:450px;">
+                <h3 style="font-size:26px;">All-Time Max</h3>
+                <div id="{{ station }}_max" style="width:450px; height:350px;"></div>
+            </div>
+        </div>
+
+    </div>
+
+    {% endfor %}
+</div>
+
+<script>
+const stationStats = {{ station_stats | tojson }};
+var metricName = "{{ metric }}";
+
+const metricLabels2 = {
+    "temperature": "Temperature (°F)",
+    "wind_speed": "Wind Speed (mph)",
+    "wind_direction": "Wind Direction (°)",
+    "lux": "Light Level (lx)",
+    "rain_inches": "Rainfall (in)"
+};
+
+var gaugeLabel = metricLabels2[metricName] || metricName;
+
+var gaugeRanges = {
+    "temperature": [-20, 120],
+    "wind_speed": [0, 50],
+    "wind_direction": [0, 360],
+    "lux": [0, 2000],
+    "rain_inches": [0, 5]
+};
+
+var axisRange = gaugeRanges[metricName] || [0, 100];
+
+for (const [station, stats] of Object.entries(stationStats)) {
+
+    Plotly.newPlot(`${station}_min`, [{
+        type: "indicator",
+        mode: "gauge+number",
+        value: stats.min,
+        title: { text: gaugeLabel + "<br>(Min)", font: { size: 20 } },
+        number: { font: { size: 38 } },
+        gauge: { axis: { range: axisRange } }
+    }], { width: 450, height: 350 });
+
+    Plotly.newPlot(`${station}_max`, [{
+        type: "indicator",
+        mode: "gauge+number",
+        value: stats.max,
+        title: { text: gaugeLabel + "<br>(Max)", font: { size: 20 } },
+        number: { font: { size: 38 } },
+        gauge: { axis: { range: axisRange } }
+    }], { width: 450, height: 350 });
+}
+</script>
+{% endif %}
+
+</body>
+</html>
