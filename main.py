@@ -645,7 +645,7 @@ if __name__ == "__main__":
 
     app.run(
         host=os.getenv('HOSTIP', '127.0.0.1'),
-        debug=os.getenv('FLASKDEBUG', True),
+        debug=os.getenv('FLASKDEBUG', False),
         port=os.getenv('PORT', '5000'),
         use_reloader=False
     )
